@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -15,7 +17,11 @@ var newsRouter = require('./app_server/routes/news');
 var roomsRouter = require('./app_server/routes/rooms');
 var apiRouter = require('./app_api/routes/index');
 
+require('./app_api/models/db');
+require('./app_api/config/passport');
+
 var app = express();
+const passport = require('passport');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'app_server', 'views'));
@@ -29,11 +35,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(passport.initialize());
 
 //Enable CORS
 app.use('/api', (req, res, next) => {
   res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
   next();
 });
@@ -63,5 +70,14 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+// catching unauthorized, create 401
+ape.use((err, req, res, next) => {
+  if (err.name === 'UnauthorizedError') {
+    res
+    .status(401)
+    .json({'message': err.name + ': ' + err.message});
+  }
+})
 
 module.exports = app;
